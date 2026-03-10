@@ -29,4 +29,4 @@ services:
     pullRequestPreviewsEnabled: false
     envVars:
       - key: REACT_APP_API_URL
-        value: https://portfolio-api.onrender.com
+        value: https://portfolio-mashfar.onrender.com
