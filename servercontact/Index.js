@@ -5,16 +5,21 @@ const cors = require("cors");
 require("dotenv").config();
 
 const app = express();
-app.use(cors());
+
+const allowedOrigins = (process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: allowedOrigins.length > 0 ? allowedOrigins : true,
+  })
+);
 app.use(express.json());
 
-const {
-  SMTP_HOST,
-  SMTP_PORT,
-  SMTP_USER,
-  SMTP_PASS,
-  MAIL_TO,
-} = process.env;
+const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, MAIL_TO } = process.env;
+const MAIL_RECIPIENT = MAIL_TO || SMTP_USER;
 
 const transporter = nodemailer.createTransport(
   SMTP_HOST
@@ -60,9 +65,13 @@ app.post("/contact", async (req, res) => {
       return res.status(500).json({ error: "Email credentials are not configured" });
     }
 
+    if (!MAIL_RECIPIENT) {
+      return res.status(500).json({ error: "Email recipient is not configured" });
+    }
+
     await transporter.sendMail({
       from: SMTP_USER || "no-reply@contact-form.local",
-      to: MAIL_TO,
+      to: MAIL_RECIPIENT,
       subject: `New contact message   from ${name}`,
       replyTo: email,
       text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone || ""}\n\nMessage:\n${message}`,

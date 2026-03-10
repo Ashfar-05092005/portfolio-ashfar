@@ -6,6 +6,19 @@ services:
     buildCommand: npm install
     startCommand: npm start
     plan: free
+    envVars:
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: MAIL_TO
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
 
   - type: web
     name: portfolio-web
@@ -14,3 +27,6 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: build
     pullRequestPreviewsEnabled: false
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://portfolio-api.onrender.com

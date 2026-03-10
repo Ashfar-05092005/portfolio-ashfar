@@ -2,7 +2,7 @@
 import "../Stylesheet.css";
 import axios from "axios";
 import { FaPaperPlane } from "react-icons/fa";
-const API = process.env.REACT_APP_API_URL;
+const API = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
 const Contact = ({ isActive }) => {
   const [form, setForm] = useState({
@@ -54,7 +54,9 @@ const Contact = ({ isActive }) => {
       // Clear success message after 5 seconds
       setTimeout(() => setSuccess(""), 5000);
     } catch (err) {
-      setError("Error submitting form. Please try again.");
+      const serverMessage = err?.response?.data?.error;
+      const fallbackMessage = err?.message || "Error submitting form. Please try again.";
+      setError(serverMessage || fallbackMessage);
       console.error("Error submitting form:", err);
     } finally {
       setLoading(false);
