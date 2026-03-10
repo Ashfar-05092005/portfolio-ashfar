@@ -82,7 +82,7 @@ const Resume = ({ isActive }) => {
 
           <section className="resume-download" style={{ textAlign: 'center', margin: '30px 0' }}>
             <a
-              href="ihb"
+              href="https://drive.google.com/file/d/1Xo9n8s5l3m2v6Zt7y8u9w0x1y2z3a4b/view?usp=sharing"
               className="form-btn"
               target="_blank"
               rel="noopener noreferrer"

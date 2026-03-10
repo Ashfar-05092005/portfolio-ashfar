@@ -6,21 +6,21 @@ import project2Img from "../images/Throught towards development.png";
 const projectsData = [
   {
     id: 1,
-    title: "AI PDF Chatbot",
+    title: "Thoughts Towards Development",
     category: "applications",
-    imageUrl: project1Img, 
-    link: "#"
+    imageUrl: project2Img, 
+    link: "https://throughts-towards-development.onrender.com",
   },
   {
     id: 2,
-    title: "Smart AI Summarizer",
+    title: "coming soon................",
     category: "web development",
     imageUrl: project1Img,
     link: "#"
   },
   {
     id: 3,
-    title: "Thoughts Towards Development",
+    title: "coming soon................",
     category: "applications",
     imageUrl: project2Img,
     link: "https://throughts-towards-development.onrender.com",
