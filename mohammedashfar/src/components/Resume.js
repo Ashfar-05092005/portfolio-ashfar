@@ -82,9 +82,9 @@ const Resume = ({ isActive }) => {
 
           <section className="resume-download" style={{ textAlign: 'center', margin: '30px 0' }}>
             <a
-              href="https://drive.google.com/file/d/1CfidgjDKBzi8afNejqWaAGMdjZHk324L/view?usp=sharing"
+              href="https://drive.google.com/file/d/1CfidgjDKBzi8afNejqWaAGMdjZHk324L/view?usp=drive_link"
               className="form-btn"
-              target="_blank"
+              target="blank"
               rel="noopener noreferrer"
             >
               <ion-icon name="download-outline"></ion-icon>
