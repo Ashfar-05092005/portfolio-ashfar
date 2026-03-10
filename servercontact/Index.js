@@ -22,10 +22,22 @@ const transporter = nodemailer.createTransport(
         host: SMTP_HOST,
         port: Number(SMTP_PORT || 587),
         secure: Number(SMTP_PORT) === 465,
+        pool: true,
+        maxConnections: 2,
+        maxMessages: 50,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
         auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
       }
     : {
         service: "gmail",
+        pool: true,
+        maxConnections: 2,
+        maxMessages: 50,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
         auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
       }
 );

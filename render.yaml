@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: portfolio-api
+    env: node
+    rootDir: servercontact
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+
+  - type: web
+    name: portfolio-web
+    env: static
+    rootDir: mohammedashfar
+    buildCommand: npm install && npm run build
+    staticPublishPath: build
+    pullRequestPreviewsEnabled: false

@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+  import React, { useState } from "react";
 import "../Stylesheet.css";
 import axios from "axios";
 import { FaPaperPlane } from "react-icons/fa";
-const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const API = process.env.REACT_APP_API_URL;
 
 const Contact = ({ isActive }) => {
   const [form, setForm] = useState({
@@ -38,6 +38,11 @@ const Contact = ({ isActive }) => {
     setLoading(true);
 
     try {
+      if (!API) {
+        setError("API URL is not configured. Set REACT_APP_API_URL in .env");
+        return;
+      }
+
       await axios.post(`${API}/contact`, {
         ...form,
         phone: Number(form.phone),
