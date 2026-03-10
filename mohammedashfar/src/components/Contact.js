@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "../Stylesheet.css";
 import axios from "axios";
 import { FaPaperPlane } from "react-icons/fa";
-const API = `http://localhost:4000`;
+const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 const Contact = ({ isActive }) => {
   const [form, setForm] = useState({
