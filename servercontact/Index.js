@@ -25,28 +25,33 @@ const SMTP_USER = (process.env.SMTP_USER || "").trim();
 const SMTP_PASS = (process.env.SMTP_PASS || "").replace(/\s+/g, "").trim();
 const MAIL_TO = (process.env.MAIL_TO || "").trim();
 const MAIL_RECIPIENT = MAIL_TO || SMTP_USER;
+const SMTP_EFFECTIVE_HOST = SMTP_HOST || "smtp.gmail.com";
+const IS_GMAIL_HOST = /(^|\.)gmail\.com$/i.test(SMTP_EFFECTIVE_HOST);
 
-const smtpConfig = {
-  host: SMTP_HOST || "smtp.gmail.com",
-  port: SMTP_PORT,
-  secure: SMTP_PORT === 465,
-  pool: true,
-  maxConnections: 2,
-  maxMessages: 50,
-  connectionTimeout: 20000,
-  greetingTimeout: 20000,
-  socketTimeout: 30000,
-  auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
-};
+function createSmtpConfig(port) {
+  return {
+    host: SMTP_EFFECTIVE_HOST,
+    port,
+    secure: port === 465,
+    pool: true,
+    maxConnections: 2,
+    maxMessages: 50,
+    connectionTimeout: 20000,
+    greetingTimeout: 20000,
+    socketTimeout: 30000,
+    auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+  };
+}
+
+const smtpAttemptPorts = IS_GMAIL_HOST
+  ? Array.from(new Set([SMTP_PORT, 587, 465]))
+  : [SMTP_PORT];
 
 console.log("SMTP Config loaded:", {
-  host: smtpConfig.host,
-  port: smtpConfig.port,
-  hasAuth: !!smtpConfig.auth,
-  secure: smtpConfig.secure,
+  host: SMTP_EFFECTIVE_HOST,
+  attemptPorts: smtpAttemptPorts,
+  hasAuth: !!(SMTP_USER && SMTP_PASS),
 });
-
-const transporter = nodemailer.createTransport(smtpConfig);
 
 // GET route
 app.get("/", (_req, res) => {
@@ -70,13 +75,31 @@ app.post("/contact", async (req, res) => {
       return res.status(500).json({ error: "Email recipient is not configured" });
     }
 
-    await transporter.sendMail({
+    const mailOptions = {
       from: SMTP_USER || "no-reply@contact-form.local",
       to: MAIL_RECIPIENT,
-      subject: `New contact message   from ${name}`,
+      subject: `New contact message from ${name}`,
       replyTo: email,
       text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone || ""}\n\nMessage:\n${message}`,
-    });
+    };
+
+    let lastMailError;
+    for (const attemptPort of smtpAttemptPorts) {
+      try {
+        const transporter = nodemailer.createTransport(createSmtpConfig(attemptPort));
+        await transporter.sendMail(mailOptions);
+        console.log(`Mail sent using ${SMTP_EFFECTIVE_HOST}:${attemptPort}`);
+        lastMailError = null;
+        break;
+      } catch (sendErr) {
+        lastMailError = sendErr;
+        console.error(`Mail attempt failed on ${SMTP_EFFECTIVE_HOST}:${attemptPort}`, sendErr?.code || sendErr?.message);
+      }
+    }
+
+    if (lastMailError) {
+      throw lastMailError;
+    }
 
     res.status(200).json({ success: true, message: "Message sent" });
   } catch (err) {
