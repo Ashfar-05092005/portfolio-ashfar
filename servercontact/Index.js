@@ -39,6 +39,13 @@ const smtpConfig = {
   auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
 };
 
+console.log("SMTP Config loaded:", {
+  host: smtpConfig.host,
+  port: smtpConfig.port,
+  hasAuth: !!smtpConfig.auth,
+  secure: smtpConfig.secure,
+});
+
 const transporter = nodemailer.createTransport(smtpConfig);
 
 // GET route

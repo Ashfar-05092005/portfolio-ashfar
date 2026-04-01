@@ -18,13 +18,28 @@ Use Netlify for frontend hosting and Render for the Node/Express API.
    - Root Directory: `servercontact`
    - Build Command: `npm install`
    - Start Command: `npm start`
-3. Set environment variables in Render:
-   - `SMTP_USER`
-   - `SMTP_PASS`
-   - `MAIL_TO`
-   - `SMTP_HOST` (for Gmail: `smtp.gmail.com`)
-   - `SMTP_PORT` (usually `587`)
-   - `FRONTEND_URL` (set after Netlify deploy; use your Netlify site URL)
+3. Set environment variables in Render. Choose Gmail or Mailtrap:
+
+**Option A: Gmail (requires App Password)**
+   - `SMTP_HOST=smtp.gmail.com`
+   - `SMTP_PORT=587`
+   - `SMTP_USER=yourgmail@gmail.com`
+   - `SMTP_PASS=your_16_char_app_password` (not your normal Gmail password; see Gmail Security settings)
+   - `MAIL_TO=yourgmail@gmail.com`
+   - `FRONTEND_URL=https://your-netlify-url.netlify.app` (set after Netlify deploy)
+
+**Option B: Mailtrap (easiest for testing)**
+   - Sign up free at https://mailtrap.io
+   - Go to Settings > SMTP Settings
+   - Copy the SMTP Host, Port (2525), Username, Password
+   - Set in Render:
+     - `SMTP_HOST=smtp.mailtrap.io`
+     - `SMTP_PORT=2525`
+     - `SMTP_USER=your_mailtrap_username`
+     - `SMTP_PASS=your_mailtrap_password`
+     - `MAIL_TO=any@email.com` (Mailtrap sends all mail to your inbox)
+     - `FRONTEND_URL=https://your-netlify-url.netlify.app` (set after Netlify deploy)
+
 4. Deploy and copy the API URL, for example: `https://portfolio-api.onrender.com`.
 
 ## 3. Deploy frontend (Netlify)
@@ -66,6 +81,8 @@ Then redeploy the Render API service.
 
 ## Notes
 
-- If using Gmail SMTP, use an App Password, not your normal account password.
+- **SMTP troubleshooting**: Check Render logs for the debug line "SMTP Config loaded". It will show which host/port is being used.
+- **Gmail issues**: If using Gmail, it must have 2FA enabled and you must use an App Password (not your normal password). Generate in Google Account > Security > App Passwords.
+- **Mailtrap is easier**: If Gmail fails, use Mailtrap (free tier, no 2FA needed).
 - Free Render services can sleep when idle; first request may be slower.
 - Do not commit real `.env` files or SMTP credentials.
