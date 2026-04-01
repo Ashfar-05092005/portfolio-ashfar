@@ -26,31 +26,20 @@ const SMTP_PASS = (process.env.SMTP_PASS || "").replace(/\s+/g, "").trim();
 const MAIL_TO = (process.env.MAIL_TO || "").trim();
 const MAIL_RECIPIENT = MAIL_TO || SMTP_USER;
 
-const transporter = nodemailer.createTransport(
-  SMTP_HOST
-    ? {
-        host: SMTP_HOST,
-        port: SMTP_PORT,
-        secure: SMTP_PORT === 465,
-        pool: true,
-        maxConnections: 2,
-        maxMessages: 50,
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
-        auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
-      }
-    : {
-        service: "gmail",
-        pool: true,
-        maxConnections: 2,
-        maxMessages: 50,
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
-        auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
-      }
-);
+const smtpConfig = {
+  host: SMTP_HOST || "smtp.gmail.com",
+  port: SMTP_PORT,
+  secure: SMTP_PORT === 465,
+  pool: true,
+  maxConnections: 2,
+  maxMessages: 50,
+  connectionTimeout: 20000,
+  greetingTimeout: 20000,
+  socketTimeout: 30000,
+  auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
+};
+
+const transporter = nodemailer.createTransport(smtpConfig);
 
 // GET route
 app.get("/", (_req, res) => {

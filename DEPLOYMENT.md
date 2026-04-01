@@ -36,10 +36,18 @@ Use Netlify for frontend hosting and Render for the Node/Express API.
    - Build command: `npm run build`
    - Publish directory: `build`
 4. Add environment variable in Netlify:
-   - `REACT_APP_API_URL=https://your-render-api-url.onrender.com`
+   - `REACT_APP_API_URL=https://portfolio-ashfar-6q39.onrender.com`
 5. Deploy site.
 
 `mohammedashfar/netlify.toml` already includes SPA redirect rules.
+
+## 3b. Deploy frontend (Vercel)
+
+If you deploy the frontend on Vercel instead of Netlify, add the same environment variable in your Vercel project settings:
+
+- `REACT_APP_API_URL=https://portfolio-ashfar-6q39.onrender.com`
+
+`mohammedashfar/vercel.json` already includes SPA rewrite rules.
 
 ## 4. Update backend CORS
 
