@@ -80,6 +80,7 @@ const Contact = ({ isActive }) => {
               name="fullname"
               className="form-input"
               placeholder="Full name"
+              autoComplete="name"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               required
@@ -91,6 +92,7 @@ const Contact = ({ isActive }) => {
               name="email"
               className="form-input"
               placeholder="Email address"
+              autoComplete="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               required
@@ -102,6 +104,7 @@ const Contact = ({ isActive }) => {
               name="phone"
               className="form-input center"
               placeholder="Phone number"
+              autoComplete="tel"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               required
@@ -116,6 +119,7 @@ const Contact = ({ isActive }) => {
             name="message"
             className="form-input"
             placeholder="Your Message"
+            autoComplete="off"
             value={form.message}
             onChange={(e) => setForm({ ...form, message: e.target.value })}
             required
