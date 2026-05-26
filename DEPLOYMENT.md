@@ -83,6 +83,7 @@ Then redeploy the Render API service.
 
 - **SMTP troubleshooting**: Check Render logs for the debug line "SMTP Config loaded". It will show which host/port is being used.
 - **Gmail issues**: If using Gmail, it must have 2FA enabled and you must use an App Password (not your normal password). Generate in Google Account > Security > App Passwords.
+- **Hosting limits**: If the app still reports "Could not reach SMTP server", the host is probably blocking outbound SMTP. In that case, switch to Mailtrap for testing or use a transactional email provider that sends over HTTPS instead of raw SMTP.
 - **Mailtrap is easier**: If Gmail fails, use Mailtrap (free tier, no 2FA needed).
 - Free Render services can sleep when idle; first request may be slower.
 - Do not commit real `.env` files or SMTP credentials.

@@ -33,12 +33,13 @@ function createSmtpConfig(port) {
     host: SMTP_EFFECTIVE_HOST,
     port,
     secure: port === 465,
-    pool: true,
-    maxConnections: 2,
-    maxMessages: 50,
+    requireTLS: port === 587,
     connectionTimeout: 20000,
     greetingTimeout: 20000,
     socketTimeout: 30000,
+    tls: {
+      minVersion: "TLSv1.2",
+    },
     auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
   };
 }

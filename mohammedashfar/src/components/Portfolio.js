@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../Stylesheet.css"; 
-import project1Img from "../images/ai-summary-generator-.png";
+import project1Img from "../images/Screenshot 2026-05-26 211524.png";
 import project2Img from "../images/Throught towards development.png";
 const projectsData = [
   {
@@ -13,10 +13,10 @@ const projectsData = [
   },
   {
     id: 2,
-    title: "coming soon................",
+    title: "Collaboration Analytics Platform",
     category: "web development",
     imageUrl: project1Img,
-    link: "#"
+    link: "https://collaboration-analytics-platform-xxt6.onrender.com"
   },
   {
     id: 3,

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "../Stylesheet.css";
 import axios from "axios";
 import { FaPaperPlane } from "react-icons/fa";
-const API = (process.env.REACT_APP_API_URL || "https://portfolio-ashfar-6q39.onrender.com").replace(/\/$/, "");
+const API = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
 
 const Contact = ({ isActive }) => {
   const [form, setForm] = useState({
@@ -35,6 +35,12 @@ const Contact = ({ isActive }) => {
 
     setError("");
     setSuccess("");
+
+    if (!API) {
+      setError("API URL is not configured. Set REACT_APP_API_URL in .env");
+      return;
+    }
+
     setLoading(true);
 
     try {
