@@ -17,9 +17,16 @@ app.use(
   })
 );
 app.use(express.json());
-
 const SMTP_HOST = (process.env.SMTP_HOST || "").trim();
-const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_PORT_ENV = process.env.SMTP_PORT || "587";
+const SMTP_PORT = Number(SMTP_PORT_ENV);
+
+if (isNaN(SMTP_PORT) || SMTP_PORT <= 0) {
+  console.error(`ERROR: SMTP_PORT must be a number (e.g., 587 or 465), got: "${SMTP_PORT_ENV}"`);
+  console.error("Check your Render environment variables. Common mistake: setting SMTP_PORT to a URL instead of a port number.");
+  process.exit(1);
+}
+
 const SMTP_USER = (process.env.SMTP_USER || "").trim();
 // Gmail app passwords are often pasted with spaces; normalize before auth.
 const SMTP_PASS = (process.env.SMTP_PASS || "").replace(/\s+/g, "").trim();

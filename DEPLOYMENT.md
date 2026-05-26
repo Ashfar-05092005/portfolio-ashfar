@@ -21,24 +21,24 @@ Use Netlify for frontend hosting and Render for the Node/Express API.
 3. Set environment variables in Render. Choose Gmail or Mailtrap:
 
 **Option A: Gmail (requires App Password)**
-   - `SMTP_HOST=smtp.gmail.com`
-   - `SMTP_PORT=587`
-   - `SMTP_USER=yourgmail@gmail.com`
+   - `SMTP_HOST=smtp.gmail.com` (host name, NOT a URL)
+   - `SMTP_PORT=587` (port number only: 587 for STARTTLS, 465 for SSL; NOT a URL)
+   - `SMTP_USER=yourgmail@gmail.com` (your Gmail address)
    - `SMTP_PASS=your_16_char_app_password` (not your normal Gmail password; see Gmail Security settings)
-   - `MAIL_TO=yourgmail@gmail.com`
-   - `FRONTEND_URL=https://your-netlify-url.netlify.app` (set after Netlify deploy)
+   - `MAIL_TO=yourgmail@gmail.com` (recipient email)
+   - `FRONTEND_URL=https://ashfarm.onrender.com` (frontend URL without trailing slash)
 
 **Option B: Mailtrap (easiest for testing)**
    - Sign up free at https://mailtrap.io
    - Go to Settings > SMTP Settings
    - Copy the SMTP Host, Port (2525), Username, Password
    - Set in Render:
-     - `SMTP_HOST=smtp.mailtrap.io`
-     - `SMTP_PORT=2525`
+     - `SMTP_HOST=smtp.mailtrap.io` (host name, NOT a URL)
+     - `SMTP_PORT=2525` (port number only; NOT a URL)
      - `SMTP_USER=your_mailtrap_username`
      - `SMTP_PASS=your_mailtrap_password`
      - `MAIL_TO=any@email.com` (Mailtrap sends all mail to your inbox)
-     - `FRONTEND_URL=https://your-netlify-url.netlify.app` (set after Netlify deploy)
+     - `FRONTEND_URL=https://ashfarm.onrender.com` (frontend URL without trailing slash)
 
 4. Deploy and copy the API URL, for example: `https://portfolio-api.onrender.com`.
 
@@ -68,7 +68,7 @@ If you deploy the frontend on Vercel instead of Netlify, add the same environmen
 
 After Netlify gives your site URL (for example `https://your-site.netlify.app`), update Render:
 
-- `FRONTEND_URL=https://your-site.netlify.app`
+- `FRONTEND_URL=https://ashfarm.onrender.com`
 
 Then redeploy the Render API service.
 
@@ -81,6 +81,7 @@ Then redeploy the Render API service.
 
 ## Notes
 
+- **SMTP_PORT error**: If you see "SMTP_PORT must be a number", check Render environment variables. Common mistake: accidentally pasting a URL into SMTP_PORT instead of just the port number (e.g., use `587` not `https://something.com`).
 - **SMTP troubleshooting**: Check Render logs for the debug line "SMTP Config loaded". It will show which host/port is being used.
 - **Gmail issues**: If using Gmail, it must have 2FA enabled and you must use an App Password (not your normal password). Generate in Google Account > Security > App Passwords.
 - **Hosting limits**: If the app still reports "Could not reach SMTP server", the host is probably blocking outbound SMTP. In that case, switch to Mailtrap for testing or use a transactional email provider that sends over HTTPS instead of raw SMTP.
