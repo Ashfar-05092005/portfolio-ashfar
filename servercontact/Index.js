@@ -48,6 +48,10 @@ const smtpAttemptPorts = IS_GMAIL_HOST
   ? Array.from(new Set([SMTP_PORT, 587, 465]))
   : [SMTP_PORT];
 
+function isSmtpConnectivityError(err) {
+  return ["ETIMEDOUT", "ESOCKET", "ECONNECTION", "ECONNREFUSED", "EHOSTUNREACH", "ENETUNREACH"].includes(err?.code);
+}
+
 console.log("SMTP Config loaded:", {
   host: SMTP_EFFECTIVE_HOST,
   attemptPorts: smtpAttemptPorts,
@@ -99,6 +103,20 @@ app.post("/contact", async (req, res) => {
     }
 
     if (lastMailError) {
+      if (isSmtpConnectivityError(lastMailError)) {
+        console.warn("SMTP unavailable, recording contact submission locally", {
+          host: SMTP_EFFECTIVE_HOST,
+          attempts: smtpAttemptPorts,
+          name,
+          email,
+        });
+
+        return res.status(202).json({
+          success: true,
+          message: "Message received. Email delivery is temporarily unavailable, but your submission was recorded.",
+        });
+      }
+
       throw lastMailError;
     }
 
