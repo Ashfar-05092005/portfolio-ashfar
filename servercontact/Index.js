@@ -1,5 +1,9 @@
 const express = require("express");
 const nodemailer = require("nodemailer");
+const fs = require("fs");
+const path = require("path");
+const SENDGRID_KEY = (process.env.SENDGRID_API_KEY || "").trim();
+const sgMail = SENDGRID_KEY ? require("@sendgrid/mail") : null;
 const cors = require("cors");
 
 require("dotenv").config();
@@ -95,6 +99,26 @@ app.post("/contact", async (req, res) => {
       text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone || ""}\n\nMessage:\n${message}`,
     };
 
+    // Prefer SendGrid HTTP API when available because some hosts block SMTP
+    if (sgMail) {
+      try {
+        sgMail.setApiKey(SENDGRID_KEY);
+        const sgMsg = {
+          to: MAIL_RECIPIENT,
+          from: SMTP_USER || "no-reply@contact-form.local",
+          subject: mailOptions.subject,
+          text: mailOptions.text,
+          replyTo: mailOptions.replyTo,
+        };
+        await sgMail.send(sgMsg);
+        console.log("Mail sent via SendGrid API");
+        return res.status(200).json({ success: true, message: "Message sent" });
+      } catch (sgErr) {
+        console.error("SendGrid send failed:", sgErr?.message || sgErr);
+        // fall through to SMTP attempts as a fallback
+      }
+    }
+
     let lastMailError;
     for (const attemptPort of smtpAttemptPorts) {
       try {
@@ -117,6 +141,15 @@ app.post("/contact", async (req, res) => {
           name,
           email,
         });
+
+        // Persist the submission locally for later retry/inspection
+        try {
+          const outPath = path.join(__dirname, "failed_submissions.log");
+          const entry = JSON.stringify({ name, email, phone, message, date: new Date().toISOString(), host: SMTP_EFFECTIVE_HOST, attempts: smtpAttemptPorts }) + "\n";
+          fs.appendFileSync(outPath, entry, { encoding: "utf8" });
+        } catch (fileErr) {
+          console.error("Failed to write failed_submissions.log:", fileErr?.message || fileErr);
+        }
 
         return res.status(202).json({
           success: true,
