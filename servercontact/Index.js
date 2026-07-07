@@ -45,6 +45,14 @@ const transporterCache = new Map();
 let lastSuccessfulPort = null;
 const contactQueue = [];
 let isQueueWorkerRunning = false;
+const deliveryStats = {
+  queued: 0,
+  delivered: 0,
+  failed: 0,
+  lastSuccessAt: null,
+  lastFailureAt: null,
+  lastFailureReason: null,
+};
 
 function createSmtpConfig(port) {
   return {
@@ -221,6 +229,9 @@ async function processContactQueue() {
   try {
     await deliverContactSubmission(item.payload);
     contactQueue.splice(itemIndex, 1);
+    deliveryStats.delivered += 1;
+    deliveryStats.lastSuccessAt = new Date().toISOString();
+    deliveryStats.lastFailureReason = null;
   } catch (err) {
     item.attempts += 1;
     const retryable = isRetryableMailError(err);
@@ -228,6 +239,9 @@ async function processContactQueue() {
     if (!retryable || item.attempts >= QUEUE_MAX_RETRIES) {
       await recordFailedSubmission(item.payload, err?.code || err?.message || "unknown_error");
       contactQueue.splice(itemIndex, 1);
+      deliveryStats.failed += 1;
+      deliveryStats.lastFailureAt = new Date().toISOString();
+      deliveryStats.lastFailureReason = err?.code || err?.message || "unknown_error";
       console.error("Dropping queued contact submission", {
         email: item.payload?.email,
         attempts: item.attempts,
@@ -264,6 +278,15 @@ app.get("/", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.get("/contact/status", (_req, res) => {
+  res.json({
+    status: "ok",
+    queueLength: contactQueue.length,
+    isQueueWorkerRunning,
+    deliveryStats,
+  });
+});
+
 // POST route
 app.post("/contact", async (req, res) => {
   try {
@@ -282,6 +305,10 @@ app.post("/contact", async (req, res) => {
     }
 
     enqueueContactSubmission({ name, email, phone, message });
+    deliveryStats.queued += 1;
+    processContactQueue().catch((queueErr) => {
+      console.error("Queue processing failed:", queueErr?.message || queueErr);
+    });
     res.status(202).json({
       success: true,
       message: "Message received and queued for delivery.",
