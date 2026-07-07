@@ -25,7 +25,7 @@ const Contact = ({ isActive }) => {
     } else if (!form.email) {
       setError("Email is required");
       return;
-    } else if (!/^\d{10}$/.test(form.phone)) {
+    } else if (form.phone && !/^\d{10}$/.test(form.phone)) {
       setError("Enter a valid 10-digit phone number");
       return;
     } else if (!form.message) {
@@ -77,7 +77,7 @@ const Contact = ({ isActive }) => {
           <div className="input-wrapper">
             <input
               type="text"
-              name="fullname"
+              name="name"
               className="form-input"
               placeholder="Full name"
               autoComplete="name"
@@ -103,11 +103,10 @@ const Contact = ({ isActive }) => {
               type="tel"
               name="phone"
               className="form-input center"
-              placeholder="Phone number"
+              placeholder="Phone number (optional)"
               autoComplete="tel"
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              required
               data-form-input
               disabled={loading}
             />
