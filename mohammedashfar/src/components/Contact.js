@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import "../Stylesheet.css";
 import axios from "axios";
 import { FaPaperPlane } from "react-icons/fa";
-const API = (process.env.REACT_APP_API_URL || "").replace(/\/$/, "");
+const API = (process.env.REACT_APP_API_URL || "https://portfolio-ashfar-6q39.onrender.com").replace(/\/$/, "");
 
 const Contact = ({ isActive }) => {
   const [form, setForm] = useState({
