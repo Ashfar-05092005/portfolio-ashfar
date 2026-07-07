@@ -44,10 +44,14 @@ const Contact = ({ isActive }) => {
     setLoading(true);
 
     try {
-      await axios.post(`${API}/contact`, {
+      const response = await axios.post(`${API}/contact`, {
         ...form,
         phone: Number(form.phone),
       });
+
+      if (response?.data?.success !== true) {
+        throw new Error(response?.data?.error || "Message was not delivered");
+      }
 
       setForm({ name: "", email: "", phone: "", message: "" });
       setSuccess("Message sent successfully!");

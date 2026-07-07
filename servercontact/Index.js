@@ -8,7 +8,17 @@ require("dotenv").config({ path: path.join(__dirname, ".env") });
 
 const SENDGRID_KEY = (process.env.SENDGRID_API_KEY || "").trim();
 const sgMail = SENDGRID_KEY ? require("@sendgrid/mail") : null;
-const EMAIL_PROVIDER = (process.env.EMAIL_PROVIDER || (SENDGRID_KEY ? "sendgrid" : "smtp")).trim().toLowerCase();
+const EMAIL_PROVIDER_SETTING = (process.env.EMAIL_PROVIDER || "").trim().toLowerCase();
+
+function getActiveEmailProvider() {
+  if (EMAIL_PROVIDER_SETTING === "sendgrid" || EMAIL_PROVIDER_SETTING === "smtp") {
+    return EMAIL_PROVIDER_SETTING;
+  }
+
+  return SENDGRID_KEY ? "sendgrid" : "smtp";
+}
+
+const ACTIVE_EMAIL_PROVIDER = getActiveEmailProvider();
 
 const app = express();
 
@@ -23,6 +33,7 @@ app.use(
   })
 );
 app.use(express.json());
+
 const SMTP_HOST = (process.env.SMTP_HOST || "").trim();
 const SMTP_PORT_ENV = process.env.SMTP_PORT || "587";
 const SMTP_PORT = Number(SMTP_PORT_ENV);
@@ -43,6 +54,8 @@ const IS_GMAIL_HOST = /(^|\.)gmail\.com$/i.test(SMTP_EFFECTIVE_HOST);
 const REQUEST_TIMEOUT_MS = Number(process.env.SMTP_REQUEST_TIMEOUT_MS || "12000");
 const QUEUE_POLL_INTERVAL_MS = Number(process.env.CONTACT_QUEUE_POLL_INTERVAL_MS || "500");
 const QUEUE_MAX_RETRIES = Number(process.env.CONTACT_QUEUE_MAX_RETRIES || "3");
+const SENDGRID_FROM = (process.env.SENDGRID_FROM || SMTP_USER || "no-reply@contact-form.local").trim();
+
 const transporterCache = new Map();
 let lastSuccessfulPort = null;
 const contactQueue = [];
@@ -55,6 +68,54 @@ const deliveryStats = {
   lastFailureAt: null,
   lastFailureReason: null,
 };
+
+function buildMailOptions(payload) {
+  const { name, email, phone, message } = payload;
+
+  return {
+    from: SMTP_USER || "no-reply@contact-form.local",
+    to: MAIL_RECIPIENT,
+    subject: `New contact message from ${name}`,
+    replyTo: email,
+    text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone || ""}\n\nMessage:\n${message}`,
+  };
+}
+
+function logMailFailure(err, context) {
+  console.error("Mail send failed", {
+    context,
+    provider: ACTIVE_EMAIL_PROVIDER,
+    code: err?.code,
+    message: err?.message,
+    responseStatus: err?.response?.statusCode,
+    responseBody: err?.response?.body,
+    stack: err?.stack,
+    error: err,
+  });
+}
+
+function getMailErrorMessage(err) {
+  const sendgridMessage = err?.response?.body?.errors?.[0]?.message;
+  const responseStatus = err?.response?.statusCode;
+
+  if (err?.code === "EAUTH" || err?.code === "535") {
+    return "Email authentication failed. Check SMTP_USER and SMTP_PASS (app password).";
+  }
+
+  if (err?.code === "EMAIL_SEND_TIMEOUT" || err?.code === "ETIMEDOUT" || err?.code === "ESOCKET") {
+    return "Could not reach the email provider. Check SMTP_HOST/SMTP_PORT and hosting network rules.";
+  }
+
+  if (sendgridMessage) {
+    return sendgridMessage;
+  }
+
+  if (typeof responseStatus === "number") {
+    return `Email provider rejected the message (${responseStatus}). Check provider settings and sender verification.`;
+  }
+
+  return "Failed to send message";
+}
 
 function createSmtpConfig(port) {
   return {
@@ -96,25 +157,19 @@ const smtpAttemptPorts = IS_GMAIL_HOST
   ? Array.from(new Set([SMTP_PORT, 587, 465]))
   : [SMTP_PORT];
 
-function isSmtpConnectivityError(err) {
-  return ["ETIMEDOUT", "ESOCKET", "ECONNECTION", "ECONNREFUSED", "EHOSTUNREACH", "ENETUNREACH"].includes(err?.code);
-}
-
 function isAuthError(err) {
   return ["EAUTH", "535"].includes(err?.code) || /auth/i.test(err?.message || "");
 }
 
 function isRetryableMailError(err) {
-  if (!err) {
-    return false;
-  }
+  if (!err) return false;
 
   if (["EMAIL_SEND_TIMEOUT", "ETIMEDOUT", "ESOCKET", "ECONNECTION", "ECONNREFUSED", "EHOSTUNREACH", "ENETUNREACH"].includes(err?.code)) {
     return true;
   }
 
-  const sendgridStatus = err?.response?.statusCode;
-  if (typeof sendgridStatus === "number" && sendgridStatus >= 500) {
+  const responseStatus = err?.response?.statusCode;
+  if (responseStatus === 429 || (typeof responseStatus === "number" && responseStatus >= 500)) {
     return true;
   }
 
@@ -126,77 +181,44 @@ function getOrderedAttemptPorts() {
     return smtpAttemptPorts;
   }
 
-  return [
-    lastSuccessfulPort,
-    ...smtpAttemptPorts.filter((port) => port !== lastSuccessfulPort),
-  ];
+  return [lastSuccessfulPort, ...smtpAttemptPorts.filter((port) => port !== lastSuccessfulPort)];
 }
 
-async function recordFailedSubmission(payload, reason) {
-  try {
-    const outPath = path.join(__dirname, "failed_submissions.log");
-    const entry = JSON.stringify({ ...payload, reason, date: new Date().toISOString(), host: SMTP_EFFECTIVE_HOST, attempts: smtpAttemptPorts }) + "\n";
-    await fs.promises.appendFile(outPath, entry, { encoding: "utf8" });
-  } catch (fileErr) {
-    console.error("Failed to write failed_submissions.log:", fileErr?.message || fileErr);
+async function sendViaSendGrid(payload) {
+  const mailOptions = buildMailOptions(payload);
+
+  if (!sgMail || !SENDGRID_KEY) {
+    const configError = new Error("SENDGRID_API_KEY is not configured");
+    configError.code = "ENOSENDGRID";
+    throw configError;
   }
-}
 
-async function deliverContactSubmission(payload) {
-  const { name, email, phone, message } = payload;
-  const mailOptions = {
-    from: SMTP_USER || "no-reply@contact-form.local",
-    to: MAIL_RECIPIENT,
-    subject: `New contact message from ${name}`,
-    replyTo: email,
-    text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone || ""}\n\nMessage:\n${message}`,
-  };
+  sgMail.setApiKey(SENDGRID_KEY);
 
-  const useSendGrid = EMAIL_PROVIDER === "sendgrid" || (EMAIL_PROVIDER !== "smtp" && !!sgMail);
-
-  // Prefer SendGrid HTTP API in production because some hosts block SMTP
-  if (useSendGrid) {
-    if (!sgMail) {
-      const providerError = new Error("SENDGRID_API_KEY is not configured");
-      providerError.code = "ENOSENDGRID";
-      throw providerError;
-    }
-
-    try {
-      sgMail.setApiKey(SENDGRID_KEY);
-      const sgMsg = {
+  try {
+    await sendWithTimeout(
+      sgMail.send({
         to: MAIL_RECIPIENT,
-        from: SMTP_USER || "no-reply@contact-form.local",
+        from: SENDGRID_FROM,
         subject: mailOptions.subject,
         text: mailOptions.text,
         replyTo: mailOptions.replyTo,
-      };
-      await sendWithTimeout(
-        sgMail.send(sgMsg),
-        REQUEST_TIMEOUT_MS,
-        "Timed out sending mail via SendGrid"
-      );
-      console.log("Mail sent via SendGrid API");
-      return;
-    } catch (sgErr) {
-      console.error("SendGrid send failed:", sgErr?.message || sgErr);
-      if (!isRetryableMailError(sgErr)) {
-        throw sgErr;
-      }
-      if (EMAIL_PROVIDER === "sendgrid") {
-        throw sgErr;
-      }
-      // fall through to SMTP attempts as a fallback for local development
-    }
-  }
+      }),
+      REQUEST_TIMEOUT_MS,
+      "Timed out sending mail via SendGrid"
+    );
 
-  if (EMAIL_PROVIDER === "sendgrid") {
-    const providerError = new Error("SendGrid delivery failed and SMTP fallback is disabled");
-    providerError.code = "ENOSENDGRIDFALLBACK";
-    throw providerError;
+    console.log("Mail sent via SendGrid API");
+  } catch (err) {
+    logMailFailure(err, "sendgrid");
+    throw err;
   }
+}
 
+async function sendViaSmtp(payload) {
+  const mailOptions = buildMailOptions(payload);
   let lastMailError;
+
   for (const attemptPort of getOrderedAttemptPorts()) {
     try {
       const transporter = getTransporter(attemptPort);
@@ -207,11 +229,10 @@ async function deliverContactSubmission(payload) {
       );
       console.log(`Mail sent using ${SMTP_EFFECTIVE_HOST}:${attemptPort}`);
       lastSuccessfulPort = attemptPort;
-      lastMailError = null;
-      break;
+      return;
     } catch (sendErr) {
       lastMailError = sendErr;
-      console.error(`Mail attempt failed on ${SMTP_EFFECTIVE_HOST}:${attemptPort}`, sendErr?.code || sendErr?.message);
+      logMailFailure(sendErr, `smtp:${attemptPort}`);
       if (isAuthError(sendErr)) {
         break;
       }
@@ -223,11 +244,36 @@ async function deliverContactSubmission(payload) {
   }
 }
 
-function enqueueContactSubmission(payload) {
+async function deliverContactSubmission(payload) {
+  if (ACTIVE_EMAIL_PROVIDER === "sendgrid") {
+    return sendViaSendGrid(payload);
+  }
+
+  return sendViaSmtp(payload);
+}
+
+async function recordFailedSubmission(payload, reason) {
+  try {
+    const outPath = path.join(__dirname, "failed_submissions.log");
+    const entry = JSON.stringify({
+      ...payload,
+      reason,
+      date: new Date().toISOString(),
+      provider: ACTIVE_EMAIL_PROVIDER,
+      host: SMTP_EFFECTIVE_HOST,
+      attempts: smtpAttemptPorts,
+    }) + "\n";
+    await fs.promises.appendFile(outPath, entry, { encoding: "utf8" });
+  } catch (fileErr) {
+    console.error("Failed to write failed_submissions.log:", fileErr?.message || fileErr);
+  }
+}
+
+function enqueueContactSubmission(payload, attempts = 0, delayMs = 0) {
   contactQueue.push({
     payload,
-    attempts: 0,
-    nextAttemptAt: Date.now(),
+    attempts,
+    nextAttemptAt: Date.now() + delayMs,
   });
 }
 
@@ -252,6 +298,7 @@ async function processContactQueue() {
     deliveryStats.lastSuccessAt = new Date().toISOString();
     deliveryStats.lastFailureReason = null;
   } catch (err) {
+    logMailFailure(err, "queue-retry");
     item.attempts += 1;
     const retryable = isRetryableMailError(err);
 
@@ -281,20 +328,22 @@ async function processContactQueue() {
   }
 }
 
-console.log("SMTP Config loaded:", {
-  host: SMTP_EFFECTIVE_HOST,
-  attemptPorts: smtpAttemptPorts,
-  hasAuth: !!(SMTP_USER && SMTP_PASS),
+console.log("Mail config loaded:", {
+  provider: ACTIVE_EMAIL_PROVIDER,
+  providerSetting: EMAIL_PROVIDER_SETTING || "(auto)",
+  hasSendGridKey: !!SENDGRID_KEY,
+  sendGridFrom: SENDGRID_FROM,
+  smtpHost: SMTP_EFFECTIVE_HOST,
+  hasSmtpAuth: !!(SMTP_USER && SMTP_PASS),
   requestTimeoutMs: REQUEST_TIMEOUT_MS,
   queuePollIntervalMs: QUEUE_POLL_INTERVAL_MS,
   queueMaxRetries: QUEUE_MAX_RETRIES,
-  emailProvider: EMAIL_PROVIDER,
-  hasSendGridKey: !!SENDGRID_KEY,
+  frontendOrigins: allowedOrigins,
 });
 
 setInterval(processContactQueue, QUEUE_POLL_INTERVAL_MS);
 
-// GET route
+// GET routes
 app.get("/", (_req, res) => {
   res.json({ status: "ok" });
 });
@@ -304,56 +353,72 @@ app.get("/contact/status", (_req, res) => {
     status: "ok",
     queueLength: contactQueue.length,
     isQueueWorkerRunning,
-    emailProvider: EMAIL_PROVIDER,
+    emailProvider: ACTIVE_EMAIL_PROVIDER,
     hasSendGridKey: !!SENDGRID_KEY,
     deliveryStats,
   });
 });
 
-// POST route
+// POST route — await the real send result so the response reflects reality
 app.post("/contact", async (req, res) => {
+  const { name, email, phone, message } = req.body || {};
+
+  if (!name || !email || !message) {
+    return res.status(400).json({ error: "Name, email, and message are required" });
+  }
+
+  if (!MAIL_RECIPIENT) {
+    return res.status(500).json({ error: "Email recipient is not configured" });
+  }
+
+  if (ACTIVE_EMAIL_PROVIDER === "sendgrid" && !SENDGRID_KEY) {
+    return res.status(500).json({ error: "SendGrid is selected but SENDGRID_API_KEY is not configured" });
+  }
+
+  if (ACTIVE_EMAIL_PROVIDER !== "sendgrid" && (!SMTP_USER || !SMTP_PASS)) {
+    return res.status(500).json({ error: "Email credentials are not configured" });
+  }
+
+  const payload = { name, email, phone, message };
+
   try {
-    const { name, email, phone, message } = req.body || {};
-
-    if (!name || !email || !message) {
-      return res.status(400).json({ error: "Name, email, and message are required" });
-    }
-
-    if (!MAIL_RECIPIENT) {
-      return res.status(500).json({ error: "Email recipient is not configured" });
-    }
-
-    if (EMAIL_PROVIDER === "sendgrid" && !SENDGRID_KEY) {
-      return res.status(500).json({ error: "SendGrid is selected but SENDGRID_API_KEY is not configured" });
-    }
-
-    if (EMAIL_PROVIDER !== "sendgrid" && (!SMTP_USER || !SMTP_PASS)) {
-      return res.status(500).json({ error: "Email credentials are not configured" });
-    }
-
-    enqueueContactSubmission({ name, email, phone, message });
-    deliveryStats.queued += 1;
-    processContactQueue().catch((queueErr) => {
-      console.error("Queue processing failed:", queueErr?.message || queueErr);
-    });
-    res.status(202).json({
-      success: true,
-      message: "Message received and queued for delivery.",
-    });
+    await deliverContactSubmission(payload);
+    deliveryStats.delivered += 1;
+    deliveryStats.lastSuccessAt = new Date().toISOString();
+    return res.status(200).json({ success: true, message: "Message sent successfully!" });
   } catch (err) {
-    console.error("Mail error:", err);
+    console.error("Mail send failed on first attempt:", {
+      code: err?.code,
+      message: err?.message,
+      responseStatus: err?.response?.statusCode,
+      responseBody: err?.response?.body,
+      error: err,
+    });
+
+    deliveryStats.failed += 1;
+    deliveryStats.lastFailureAt = new Date().toISOString();
+    deliveryStats.lastFailureReason = err?.code || err?.message || "unknown_error";
+
+    if (isRetryableMailError(err)) {
+      enqueueContactSubmission(payload, 1, 2000);
+      deliveryStats.queued += 1;
+      processContactQueue().catch((queueErr) => {
+        console.error("Queue processing failed:", queueErr?.message || queueErr);
+      });
+    }
 
     const errorCode = err?.code;
     const userMessage =
       errorCode === "EAUTH"
         ? "Email authentication failed. Check SMTP_USER and SMTP_PASS (app password)."
-        : errorCode === "ETIMEDOUT" || errorCode === "ESOCKET"
-        ? "Could not reach SMTP server. Check SMTP_HOST/SMTP_PORT and hosting network rules."
-        : "Failed to send message";
+        : errorCode === "ENOSENDGRID"
+        ? "SendGrid is selected but SENDGRID_API_KEY is missing."
+        : errorCode === "EMAIL_SEND_TIMEOUT"
+        ? "Email delivery timed out. Check your provider settings and Render network access."
+        : "Failed to send message. Please try again later.";
 
-    res.status(500).json({ error: userMessage });
+    return res.status(500).json({ error: userMessage });
   }
 });
 
 app.listen(process.env.PORT || 4000, () => console.log("Server is running on port " + (process.env.PORT || 4000)));
-
