@@ -8,6 +8,7 @@ require("dotenv").config({ path: path.join(__dirname, ".env") });
 
 const SENDGRID_KEY = (process.env.SENDGRID_API_KEY || "").trim();
 const sgMail = SENDGRID_KEY ? require("@sendgrid/mail") : null;
+const EMAIL_PROVIDER = (process.env.EMAIL_PROVIDER || (SENDGRID_KEY ? "sendgrid" : "smtp")).trim().toLowerCase();
 
 const app = express();
 
@@ -151,8 +152,16 @@ async function deliverContactSubmission(payload) {
     text: `Name: ${name}\nEmail: ${email}\nPhone: ${phone || ""}\n\nMessage:\n${message}`,
   };
 
-  // Prefer SendGrid HTTP API when available because some hosts block SMTP
-  if (sgMail) {
+  const useSendGrid = EMAIL_PROVIDER === "sendgrid" || (EMAIL_PROVIDER !== "smtp" && !!sgMail);
+
+  // Prefer SendGrid HTTP API in production because some hosts block SMTP
+  if (useSendGrid) {
+    if (!sgMail) {
+      const providerError = new Error("SENDGRID_API_KEY is not configured");
+      providerError.code = "ENOSENDGRID";
+      throw providerError;
+    }
+
     try {
       sgMail.setApiKey(SENDGRID_KEY);
       const sgMsg = {
@@ -174,8 +183,17 @@ async function deliverContactSubmission(payload) {
       if (!isRetryableMailError(sgErr)) {
         throw sgErr;
       }
-      // fall through to SMTP attempts as a fallback
+      if (EMAIL_PROVIDER === "sendgrid") {
+        throw sgErr;
+      }
+      // fall through to SMTP attempts as a fallback for local development
     }
+  }
+
+  if (EMAIL_PROVIDER === "sendgrid") {
+    const providerError = new Error("SendGrid delivery failed and SMTP fallback is disabled");
+    providerError.code = "ENOSENDGRIDFALLBACK";
+    throw providerError;
   }
 
   let lastMailError;
@@ -270,6 +288,8 @@ console.log("SMTP Config loaded:", {
   requestTimeoutMs: REQUEST_TIMEOUT_MS,
   queuePollIntervalMs: QUEUE_POLL_INTERVAL_MS,
   queueMaxRetries: QUEUE_MAX_RETRIES,
+  emailProvider: EMAIL_PROVIDER,
+  hasSendGridKey: !!SENDGRID_KEY,
 });
 
 setInterval(processContactQueue, QUEUE_POLL_INTERVAL_MS);
@@ -284,6 +304,8 @@ app.get("/contact/status", (_req, res) => {
     status: "ok",
     queueLength: contactQueue.length,
     isQueueWorkerRunning,
+    emailProvider: EMAIL_PROVIDER,
+    hasSendGridKey: !!SENDGRID_KEY,
     deliveryStats,
   });
 });
@@ -297,12 +319,16 @@ app.post("/contact", async (req, res) => {
       return res.status(400).json({ error: "Name, email, and message are required" });
     }
 
-    if (!SMTP_USER || !SMTP_PASS) {
-      return res.status(500).json({ error: "Email credentials are not configured" });
-    }
-
     if (!MAIL_RECIPIENT) {
       return res.status(500).json({ error: "Email recipient is not configured" });
+    }
+
+    if (EMAIL_PROVIDER === "sendgrid" && !SENDGRID_KEY) {
+      return res.status(500).json({ error: "SendGrid is selected but SENDGRID_API_KEY is not configured" });
+    }
+
+    if (EMAIL_PROVIDER !== "sendgrid" && (!SMTP_USER || !SMTP_PASS)) {
+      return res.status(500).json({ error: "Email credentials are not configured" });
     }
 
     enqueueContactSubmission({ name, email, phone, message });
