@@ -2,11 +2,12 @@ const express = require("express");
 const nodemailer = require("nodemailer");
 const fs = require("fs");
 const path = require("path");
-const SENDGRID_KEY = (process.env.SENDGRID_API_KEY || "").trim();
-const sgMail = SENDGRID_KEY ? require("@sendgrid/mail") : null;
 const cors = require("cors");
 
-require("dotenv").config();
+require("dotenv").config({ path: path.join(__dirname, ".env") });
+
+const SENDGRID_KEY = (process.env.SENDGRID_API_KEY || "").trim();
+const sgMail = SENDGRID_KEY ? require("@sendgrid/mail") : null;
 
 const app = express();
 
