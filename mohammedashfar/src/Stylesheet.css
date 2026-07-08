@@ -1371,6 +1371,35 @@ textarea.form-input::-webkit-resizer { display: none; }
 
 .form-btn:disabled:hover::before { background: var(--bg-gradient-jet); }
 
+.form-status {
+  margin: -8px 0 20px;
+  font-size: var(--fs-7);
+  line-height: 1.5;
+}
+
+.form-status.error {
+  color: var(--bittersweet-shimmer);
+}
+
+.form-status.success {
+  color: var(--orange-yellow-crayola);
+}
+
+.contact-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: contact-spin 0.75s linear infinite;
+}
+
+@keyframes contact-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 
 
 

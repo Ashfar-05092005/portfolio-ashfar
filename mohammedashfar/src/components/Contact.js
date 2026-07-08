@@ -1,75 +1,122 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "../Stylesheet.css";
-import axios from "axios";
 import { FaPaperPlane } from "react-icons/fa";
-const API = (process.env.REACT_APP_API_URL || "https://portfolio-ashfar-6q39.onrender.com").replace(/\/$/, "");
 
-const Contact = ({ isActive }) => {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    message: "",
-  });
+const API = (process.env.REACT_APP_API_URL || "http://localhost:5000").replace(/\/$/, "");
+
+const initialForm = {
+  name: "",
+  email: "",
+  subject: "",
+  message: "",
+};
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function Contact({ isActive }) {
+  const [form, setForm] = useState(initialForm);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
+  const successTimeoutRef = useRef(null);
 
-  async function addPerson(e) {
-    e.preventDefault();
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
 
-    // simple validations
-    if (!form.name) {
-      setError("Name is required");
-      return;
-    } else if (!form.email) {
-      setError("Email is required");
-      return;
-    } else if (form.phone && !/^\d{10}$/.test(form.phone)) {
-      setError("Enter a valid 10-digit phone number");
-      return;
-    } else if (!form.message) {
-      setError("Message is required");
+  function updateField(field) {
+    return (event) => {
+      setForm((currentForm) => ({
+        ...currentForm,
+        [field]: event.target.value,
+      }));
+    };
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    const nextForm = {
+      name: form.name.trim(),
+      email: form.email.trim().toLowerCase(),
+      subject: form.subject.trim(),
+      message: form.message.trim(),
+    };
+
+    if (!nextForm.name) {
+      setError("Name is required.");
       return;
     }
 
-    setError("");
-    setSuccess("");
+    if (!nextForm.email) {
+      setError("Email is required.");
+      return;
+    }
 
-    if (!API) {
-      setError("API URL is not configured. Set REACT_APP_API_URL in .env");
+    if (!isValidEmail(nextForm.email)) {
+      setError("Enter a valid email address.");
+      return;
+    }
+
+    if (!nextForm.subject) {
+      setError("Subject is required.");
+      return;
+    }
+
+    if (!nextForm.message) {
+      setError("Message is required.");
+      return;
+    }
+
+    if (nextForm.message.length > 2000) {
+      setError("Message must be 2000 characters or fewer.");
       return;
     }
 
     setLoading(true);
+    setError("");
+    setSuccess("");
 
     try {
-      const response = await axios.post(`${API}/contact`, {
-        ...form,
-        phone: Number(form.phone),
+      const response = await fetch(`${API}/api/contact`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(nextForm),
       });
 
-      if (response?.data?.success !== true) {
-        throw new Error(response?.data?.error || "Message was not delivered");
+      const responseData = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Failed to send message.");
       }
 
-      setForm({ name: "", email: "", phone: "", message: "" });
-      setSuccess("Message sent successfully!");
-      
-      // Clear success message after 5 seconds
-      setTimeout(() => setSuccess(""), 5000);
-    } catch (err) {
-      const serverMessage = err?.response?.data?.error;
-      const fallbackMessage = err?.message || "Error submitting form. Please try again.";
-      setError(serverMessage || fallbackMessage);
-      console.error("Error submitting form:", err);
+      setForm(initialForm);
+      setSuccess(responseData.message || "Message sent successfully.");
+
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+
+      successTimeoutRef.current = setTimeout(() => {
+        setSuccess("");
+      }, 5000);
+    } catch (requestError) {
+      setError(requestError?.message || "Error submitting form. Please try again.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <article className={`contact ${isActive ? 'active' : ''}`} data-page="contact">
+    <article className={`contact ${isActive ? "active" : ""}`} data-page="contact">
       <header>
         <h2 className="h2 article-title">Contact</h2>
       </header>
@@ -77,7 +124,7 @@ const Contact = ({ isActive }) => {
       <section className="contact-form">
         <h3 className="h3 form-title">Contact Form</h3>
 
-        <form onSubmit={addPerson} className="form" data-form>
+        <form onSubmit={handleSubmit} className="form" data-form noValidate>
           <div className="input-wrapper">
             <input
               type="text"
@@ -86,7 +133,8 @@ const Contact = ({ isActive }) => {
               placeholder="Full name"
               autoComplete="name"
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={updateField("name")}
+              maxLength={100}
               required
               data-form-input
               disabled={loading}
@@ -98,46 +146,54 @@ const Contact = ({ isActive }) => {
               placeholder="Email address"
               autoComplete="email"
               value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              onChange={updateField("email")}
+              maxLength={254}
               required
               data-form-input
               disabled={loading}
             />
             <input
-              type="tel"
-              name="phone"
-              className="form-input center"
-              placeholder="Phone number (optional)"
-              autoComplete="tel"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              type="text"
+              name="subject"
+              className="form-input"
+              placeholder="Subject"
+              autoComplete="off"
+              value={form.subject}
+              onChange={updateField("subject")}
+              maxLength={120}
+              required
               data-form-input
               disabled={loading}
             />
-            {error && <p style={{ color: "red", marginBottom: "10px" }}>{error}</p>}
-            {success && <p style={{ color: "rgb(170, 255, 0)", marginBottom: "10px" }}>{success}</p>}
           </div>
 
           <textarea
             name="message"
             className="form-input"
-            placeholder="Your Message"
+            placeholder="Your message"
             autoComplete="off"
             value={form.message}
-            onChange={(e) => setForm({ ...form, message: e.target.value })}
+            onChange={updateField("message")}
+            maxLength={2000}
             required
             data-form-input
             disabled={loading}
-          ></textarea>
+          />
+
+          {(error || success) && (
+            <p className={`form-status ${error ? "error" : "success"}`} role="status" aria-live="polite">
+              {error || success}
+            </p>
+          )}
 
           <button className="form-btn" type="submit" data-form-btn disabled={loading}>
-            <FaPaperPlane style={{ fontSize: 20, color:"#ffd700" }}/>
+            {loading ? <span className="contact-spinner" aria-hidden="true" /> : <FaPaperPlane style={{ fontSize: 20, color: "#ffd700" }} />}
             <span>{loading ? "Sending..." : "Send Message"}</span>
           </button>
         </form>
       </section>
     </article>
   );
-};
+}
 
 export default Contact;

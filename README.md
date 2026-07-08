@@ -71,7 +71,7 @@ Server runs on port 4000 (configurable via PORT env var)
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `REACT_APP_API_URL` | Backend API URL (no trailing slash) | `http://localhost:4000` or `https://api.example.com` |
+| `REACT_APP_API_URL` | Backend API URL (no trailing slash) | `http://localhost:5000` or `https://api.example.com` |
 
 ### Backend Environment Variables
 
@@ -81,9 +81,9 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-16-char-app-password
-MAIL_TO=recipient@gmail.com
+CONTACT_EMAIL=recipient@gmail.com
 FRONTEND_URL=https://your-frontend-domain.onrender.com
-PORT=4000
+PORT=5000
 ```
 
 **Setup Steps:**
@@ -97,9 +97,9 @@ SMTP_HOST=smtp.mailtrap.io
 SMTP_PORT=2525
 SMTP_USER=your_mailtrap_username
 SMTP_PASS=your_mailtrap_password
-MAIL_TO=any@email.com
+CONTACT_EMAIL=any@email.com
 FRONTEND_URL=https://your-frontend-domain.onrender.com
-PORT=4000
+PORT=5000
 ```
 
 **Setup:** Sign up free at https://mailtrap.io
@@ -109,18 +109,15 @@ PORT=4000
 The contact form validates:
 - ✓ Name (required)
 - ✓ Email (required, valid format)
-- ✓ Phone (optional, must be 10 digits if provided)
+- ✓ Subject (required)
 - ✓ Message (required)
 
 ## 📧 Email Handling
 
-The backend uses a multi-strategy email delivery approach:
-1. **SendGrid API** (if `SENDGRID_API_KEY` is configured) - most reliable for hosted services
-2. **SMTP (Nodemailer)** - fallback to direct SMTP
-   - Attempts multiple ports for Gmail (587, 465)
-   - Automatic fallback to local file storage if SMTP fails
-
-Failed submissions are logged to `failed_submissions.log` for later retry.
+The backend uses Nodemailer with SMTP only:
+- Validates and sanitizes the incoming payload
+- Sends mail to `CONTACT_EMAIL`
+- Returns structured JSON errors for validation, auth, timeout, and server failures
 
 ## 🌐 Deployment
 
