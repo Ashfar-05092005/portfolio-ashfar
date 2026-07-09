@@ -1,0 +1,8 @@
+# Dependencies
+**/node_modules/
+
+# Build caches
+**/.cache/
+
+# Environment files
+**/.env
