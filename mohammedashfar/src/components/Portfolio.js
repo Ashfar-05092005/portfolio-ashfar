@@ -17,14 +17,6 @@ const projectsData = [
     category: "web development",
     imageUrl: project1Img,
     link: "https://collaboration-analytics-platform-xxt6.onrender.com"
-  },
-  {
-    id: 3,
-    title: "coming soon................",
-    category: "applications",
-    imageUrl: project2Img,
-    link: "https://throughts-towards-development.onrender.com",
-    
   }
 ];
 

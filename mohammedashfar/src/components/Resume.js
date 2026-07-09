@@ -56,26 +56,26 @@ const Resume = ({ isActive }) => {
 
           <ol className="timeline-list">
             <li className="timeline-item">
-              <h4 className="h4 timeline-item-title"> PDF</h4>
+              <h4 className="h4 timeline-item-title">Collaboration Analytics Platform</h4>
               <span>Personal Project</span>
               <p className="timeline-text">
-                Developed an interactive chatbot capable of answering questions based on the content of uploaded PDF documents, using natural language processing.
+                Developed a full-stack Collaboration Analytics Platform using React, Node.js, Express.js, and MongoDB, delivering role-based dashboards (Admin, Team Leader, Team Member) for task, project, issue, and team performance management. Engineered a secure, scalable backend architecture with RESTful APIs, modular routing, authentication/authorization middleware, data validation, and activity logging to support reliable multi-user workflows and auditability.
               </p>
             </li>
 
             <li className="timeline-item">
-              <h4 className="h4 timeline-item-title">Smart  Summarizer</h4>
+              <h4 className="h4 timeline-item-title">Thoughts-Towards-Development</h4>
               <span>Personal Project</span>
               <p className="timeline-text">
-                Created a web application that leverages machine learning models to generate concise summaries of long articles and texts.
+                Developed a project focused on organizing and analyzing innovative ideas for sustainable and technological development, aligning concepts with the Sustainable Development Goals (SDGs) and promoting solution-oriented thinking.
               </p>
             </li>
 
             <li className="timeline-item">
-              <h4 className="h4 timeline-item-title">project1</h4>
+              <h4 className="h4 timeline-item-title">Web-Based Environmental Monitoring and Sustainability Reporting System</h4>
               <span>Personal Project</span>
               <p className="timeline-text">
-               lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+                Built a Sustainability Outcome Measurement System providing a simple, reliable platform for recording, storing, and reviewing sustainability-related data such as energy consumption, water usage, waste generation, and associated environmental impact metrics. The system supports secure user authentication, role-based access, and basic CRUD operations to manage sustainability records.
               </p>
             </li>
           </ol>

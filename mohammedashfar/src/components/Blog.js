@@ -1,35 +1,18 @@
 import React, { useState } from 'react';
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../Stylesheet.css";
-
+import polymer from "../images/Polymer-01.jpg"; // Ensure the path is correct
 const blogPostsData = [
   {
     id: 1,
-    title: "mettuppalayam",
-    category: "technology",
-    date: "10/1/2025",
-    content: "Developed an interactive chatbot capable of answering questions based on the content of uploaded PDF documents, using natural language processing.",
-    imageUrl: "https://via.placeholder.com/300x200",
-    link: "https://example.com/post/1" // add real URL when available
-  },
-  {
-    id: 2,
-    title: "about agri",
-    category: "web development",
-    date: "10/1/2025",
-    content: "Created a web application that leverages machine learning models to generate concise summaries of long articles and texts.",
-    imageUrl: "https://via.placeholder.com/300x200"
-    // no link -> will render a button (accessible)
-  },
-  {
-    id: 3,
-    title: "Thoughts Towards Development",
+    title: "Polymer coated urea fertilizer ",
     category: "agriculture",
     date: "10/1/2025",
     content: "Exploring the intersection of technology and agriculture to create innovative solutions for modern farming challenges.",
-    imageUrl: "https://via.placeholder.com/300x200",
-    link: "https://throughts-towards-development.onrender.com"
+    imageUrl: polymer,
+    link: "https://jchr.org/index.php/JCHR/article/view/12804"
   }
+  
 ];
 
 const Blog = ({ isActive }) => {
