@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../Stylesheet.css";
-import polymer from "../images/Polymer-01.jpg"; // Ensure the path is correct
+import polymer from "../images/Polymer-01.jpg"; 
+import tcs from "../images/tcs certificate.jpg"// Ensure the path is correct
 const blogPostsData = [
   {
     id: 1,
@@ -11,7 +12,16 @@ const blogPostsData = [
     content: "Exploring the intersection of technology and agriculture to create innovative solutions for modern farming challenges.",
     imageUrl: polymer,
     link: "https://jchr.org/index.php/JCHR/article/view/12804"
-  }
+  },
+    {
+      id: 2,
+      title: "TCS CodeVita Season 13 Certificate",
+      category: "Technology",
+      date: "10/1/2025",
+      content: "This certificate is awarded to individuals who have successfully participated in the TCS CodeVita Season 13 coding competition, demonstrating their programming skills and problem-solving abilities.",
+      imageUrl: tcs,
+     
+    }
   
 ];
 
