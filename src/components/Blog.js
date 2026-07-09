@@ -20,7 +20,7 @@ const blogPostsData = [
     date: "10/1/2025",
     content: "Exploring the intersection of technology and  create innovative solutions.",
     imageUrl: tcs,
-    link: ""
+    link: "#"
   }
   
 ];
