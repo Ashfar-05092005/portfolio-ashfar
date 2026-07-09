@@ -13,15 +13,15 @@ const blogPostsData = [
     imageUrl: polymer,
     link: "https://jchr.org/index.php/JCHR/article/view/12804"
   },
-  {
-    id: 2,
-    title: "TCS CodeVita Season 13",
-    category: "technology",
-    date: "10/1/2025",
-    content: "Exploring the intersection of technology and  create innovative solutions.",
-    imageUrl: tcs,
-    link: "#"
-  }
+{
+  id: 2,
+  title: "TCS CodeVita Season 13",
+  category: "technology",
+  date: "10/1/2025",
+  content: "Secured a Global Rank of 11,959 in TCS CodeVita Season 13.",
+  imageUrl: tcs,
+  link: tcs
+}
   
 ];
 
