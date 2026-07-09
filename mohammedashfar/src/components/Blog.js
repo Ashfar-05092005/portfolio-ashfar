@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../Stylesheet.css";
 import polymer from "../images/Polymer-01.jpg";
-import tcs from "../images/tcs certificate" // Ensure the path is correct
+import tcs from "../images/tcscertificate.png" // Ensure the path is correct
 const blogPostsData = [
   {
     id: 1,
