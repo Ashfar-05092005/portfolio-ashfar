@@ -64,7 +64,7 @@ function SideBar() {
             <div className="icon-box"><IoPhonePortraitOutline /></div>
             <div className="contact-info">
               <p className="contact-title">Phone</p>
-              <a href="tel:+9191XXXXXX557" className="contact-link">91******557</a>
+              <a href="tel:+916381413557" className="contact-link">916381413557</a>
             </div>
           </li>
 
