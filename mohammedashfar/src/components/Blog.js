@@ -20,7 +20,7 @@ const blogPostsData = [
       date: "10/1/2025",
       content: "This certificate is awarded to individuals who have successfully participated in the TCS CodeVita Season 13 coding competition, demonstrating their programming skills and problem-solving abilities.",
       imageUrl: tcs,
-     
+      link: "#"
     }
   
 ];
