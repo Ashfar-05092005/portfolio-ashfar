@@ -3,7 +3,6 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "../Stylesheet.css"; 
 import project1Img from "../images/Screenshot 2026-05-26 211524.png";
 import project2Img from "../images/Throught towards development.png";
-import project3Img from "../images/tcs certificate.png";
 const projectsData = [
   {
     id: 1,
@@ -18,13 +17,6 @@ const projectsData = [
     category: "web development",
     imageUrl: project1Img,
     link: "https://collaboration-analytics-platform-xxt6.onrender.com"
-  },
-  {
-    id: 3,
-    title: "TCS Certificate",
-    category: "certifications",
-    imageUrl: project3Img,
-    link: "https://tcs-certificate-example.onrender.com"
   }
 ];
 
